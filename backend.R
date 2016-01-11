@@ -341,7 +341,7 @@ igv_plot <- function (processed_frame, ranges,names, leg,group = F,
   else{
     new_frame <- new_frame[
       with(new_frame,order(
-        group, sample, pos+width, -number_of_as)
+        group, sample, pos, -number_of_as)
       ),
       ]
   }
