@@ -41,9 +41,8 @@ filter_gff_for_rows<- function (gff,names){
                    (ignore.case = T,paste('=',name,'$',sep=""), gff[,'Information']))
     
     output <-gff[index1 | index2, ] 
-    if (nrow (output) == 0){
-      stop('There are no reads this gene/peak in your selected samples')
-    }
+    
+
     output$input_gene_or_peak <- name
     empty <- rbind(empty, output)
   }
@@ -95,7 +94,7 @@ get_a_counts_gff_row <- function(bam_file_path,peak, bam_files, groups,names_fro
     result <- scanBam (full_file_path , param = param, isMinusStrand = ori)
     # A check to make sure the adapter bases column is present. 
     #If not, I make a fake one of 0s.
-    
+
     if (length(result [[1]][[6]][[1]])!= length(result [[1]][[5]])){
       result [[1]][[6]][[1]] <- rep(0, length(result [[1]][[5]]))    
     }
@@ -103,6 +102,7 @@ get_a_counts_gff_row <- function(bam_file_path,peak, bam_files, groups,names_fro
       result [[1]][[6]][[2]] <- rep(0, length(result [[1]][[5]]))      
     }
     result[[1]][["seq"]] <- as.character(result[[1]][["seq"]])
+
     if (length(result [[1]][[5]]) == 0){
       stop(paste('There are no reads for at least one peak in ', bam_file))
     }
@@ -265,13 +265,15 @@ make_means_and_meds_frame <- function (poly_a_counts){
 
 poly_a_plot <- function (processed_frame, ranges,names, leg = F,group = F){
   new_frame <- processed_frame
-  
+  new_frame$sample <- factor(new_frame$sample, levels=unique(new_frame$sample))
+
   if (group == T){
     samples <- split(new_frame, new_frame$group, drop =T)
   }
   else {
     samples <- split(new_frame, new_frame$sample, drop =T)    
   }  
+
   dummy_ecdf <- ecdf(1:10)
   curve((-1*dummy_ecdf(x)*100)+100, from=ranges[1], to=ranges[2], 
         col="white", xlim=ranges, main= paste(names),
@@ -316,7 +318,7 @@ get_genomic_seq <- function(chr, start, end){
 
 igv_plot <- function (processed_frame, ranges,names, leg,group = F, 
                       order_alt = T, alt_cumu_dis,show_poly_a =F, poly_a_pileup=T, gffin){
-  
+
   start <- gffin[1, "Peak_Start"]
   end <- gffin[1,"Peak_End"]+300
   
@@ -330,7 +332,8 @@ igv_plot <- function (processed_frame, ranges,names, leg,group = F,
   #   sequence <- strsplit(sequence , "")
   new_frame <- processed_frame
   
-  
+  new_frame$sample <- factor(new_frame$sample, levels = unique (new_frame$sample))
+  new_frame$group <- factor(new_frame$group, levels = unique (new_frame$group))
   if (gffin[1, "Orientation"] =="-"){
     new_frame <- new_frame[
       with(new_frame,order(
@@ -346,6 +349,7 @@ igv_plot <- function (processed_frame, ranges,names, leg,group = F,
       ]
   }
   if (group == T){
+
     group_status <- "group"
     samples <- split(new_frame, new_frame$group, drop =T)
   }
@@ -384,7 +388,7 @@ igv_plot <- function (processed_frame, ranges,names, leg,group = F,
     ylab("Number of reads")+
     theme(axis.text.x = element_text(colour="black"), 
           axis.text.y = element_text(colour="black"))+
-    scale_colour_manual(values = c("Alligned reads"="green", "Poly (A) tail"="blue" ))
+    scale_colour_manual(name ="Key",values = c("Alligned reads"="green", "Poly (A) tail"="blue" ))
   if (show_poly_a==T){
     if(gffin[1, "Orientation"] =="+"){
       rt = rt+ geom_segment(aes(x= pos, xend=poly_a_extension,  y= count ,
@@ -398,9 +402,9 @@ igv_plot <- function (processed_frame, ranges,names, leg,group = F,
     rm <- regmatches(gffin[,9], regexpr("id=[^;\\s]+",gffin[,9],perl=T))
     names_list <- gsub(x=rm,pattern="(id=)",
                        replacement="",perl=T)
-    rt <- rt + geom_segment(data=gffin, aes_string(x="Peak_Start", xend="Peak_End", y=-1, yend=-1), colour="RED")
+    rt <- rt + geom_segment(data=gffin, aes_string(x="Peak_Start", xend="Peak_End", y=-2 , yend=-2), colour="RED")
     loc <- (gffin$Peak_Start + gffin$Peak_End)/2
-        if(length(names_list) > 1){
+        if(length(names_list) > 0){
       ycount <- -1*max(count)/12
       rt <- rt + annotate("text", x = loc, y = ycount, label = names_list)
     }
@@ -417,19 +421,11 @@ igv_plot <- function (processed_frame, ranges,names, leg,group = F,
 pileup_plot <- function (processed_frame, ranges,names, leg,group = F, 
                          order_alt = T, alt_cumu_dis,show_poly_a =F, poly_a_pileup=T ){
   
-  if(order_alt==T){
-    
-    new_frame <- processed_frame[
-      with(processed_frame,order(
-        -width, -number_of_as)
-      ),
-      ]
-    ylab <- "Sorted Read Number"
-  }
-  else{
-    new_frame <- processed_frame
+
+  new_frame <- processed_frame
     ylab <- "Read Number"
-  }
+  new_frame$sample <- factor(new_frame$sample, levels = unique (new_frame$sample))
+  new_frame$group <- factor(new_frame$group, levels = unique (new_frame$group))
   if (group == T){
     samples <- split(new_frame, new_frame$group, drop =T)
   }
@@ -502,7 +498,7 @@ pileup_plot <- function (processed_frame, ranges,names, leg,group = F,
       }
       if (leg ==T){ 
         x_offset <-  length(strsplit(paste(leg_names), "")[[1]])
-        legend(ranges[2]-30-(x_offset)*2,110 +(length(samples)*-0.8), 
+        legend("topright", 
                legend = leg_names, fill = colours, bty ="n")
       }
       
@@ -510,7 +506,11 @@ pileup_plot <- function (processed_frame, ranges,names, leg,group = F,
   }
 }
 
-gene_expression_plot <- function(processed_bame_frame){
+gene_expression_plot <- function(processed_bame_frame, gff_path){
+  #This is where I was thinking of trying to find the correct
+  #counts csv file. Can't think of a standard way to do this though. 
+  #print(gff_path)
+  
   if (processed_bame_frame[1,"group"] == "group NULL"){
     samples <- split(processed_bame_frame,processed_bame_frame$sample, drop =T)
     xlab <- "Sample"

@@ -6,14 +6,16 @@ library("ggplot2")
 library("genomeIntervals")
 library("shinyURL")
 # library('BSgenome.Hsapiens.UCSC.hg19')
-setwd("/data/home/apattison/ShinyApps/andrew/")
+# This directory is where the plotter looks for all the 
+# plotter_config.json containing directories
+setwd("/data/home/apattison/ShinyApps/dev/data_links")
 
 shinyServer(function(input, output, session) {
   shinyURL.server(session)
   output$select_file_path <- renderUI({
     selectizeInput("file_path", label = ("Select a dataset"), 
-                choices = list.dirs(full.names=F, recursive =F), 
-                selected =  list.dirs(full.names=F, recursive =F)[1])   
+                   choices = list.dirs(full.names=F, recursive =F), 
+                   selected =  list.dirs(full.names=F, recursive =F)[1])   
   })
   
   
@@ -83,7 +85,7 @@ shinyServer(function(input, output, session) {
       input$select_peak
     }
   })
-      
+  
   
   found_bam_files <- reactive({
     find_bam_files(paste0(input$file_path, "/"))
@@ -198,7 +200,7 @@ shinyServer(function(input, output, session) {
   })
   gene_expression_plot_calcs <-
     reactive({
-      gene_expression_plot(poly_a_counts())
+      gene_expression_plot(poly_a_counts(),found_gff_files())
     })
   output$gene_expression_plot <-renderPlot({
     gene_expression_plot_calcs()
@@ -208,22 +210,34 @@ shinyServer(function(input, output, session) {
                 input$merge) 
   })
   pilup_plot_calcs <- reactive({
-    pileup_plot(poly_a_counts(), input$xslider,select_gene_peak(), input$legend,
-                group = F, input$order_alt, alt_cumu_dis = F,show_poly_a =F, input$poly_a_pileup )
+    pileup_plot(poly_a_counts(), input$xslider_2,select_gene_peak(), input$legend_2,
+                group = F, input$order_alt, alt_cumu_dis = T,show_poly_a =F, F)
   })
+  pilup_plot_calcs_2 <-function(){
+    pileup_plot(poly_a_counts(), input$xslider_2,select_gene_peak(), input$legend_2,
+                group = F, input$order_alt, alt_cumu_dis = T,show_poly_a =F, F)
+  }
   coverage_plot_calcs <- reactive({
     
     igv_plot (poly_a_counts(), input$xslider,select_gene_peak(),input$legend,group = input$merge, 
               input$order_alt, alt_cumu_dis =F,show_poly_a =input$spa, poly_a_pileup=T,gffInput ())
+
+  })
+  coverage_plot_calcs_2 <- reactive({
+    
+    igv_plot (poly_a_counts(), input$xslider,select_gene_peak(),input$legend,group = input$merge, 
+              input$order_alt, alt_cumu_dis =F,show_poly_a =input$spa, poly_a_pileup=T,gffInput ())
+    dev.copy2eps(file = 'igv_plot.eps')
   })
   
   output$igv_plot<- renderPlot({ 
     if(input$recalc == 0){
-        return()
-        #coverage_plot_calcs()
+      return()
+      #coverage_plot_calcs()
     }
     isolate(coverage_plot_calcs())
   })
+
   
   
   output$pilup_plot<- renderPlot({  
@@ -266,11 +280,24 @@ shinyServer(function(input, output, session) {
     else{
       return("Reads That Fall Within The Selected Read Lengths")      
     }
-  }) 
+  })
+  output$help_text <-renderText({
+    return(paste("This interactive Shiny application was developed by Andrew Pattison, Paul Harrison,Jack Xu and Michael See for the RNA Systems Biology Laboratory at Monash University, Melbourne, Australia.", 
+                 "This tool allows exploration of data from two custom RNA sequencing experiments, namely PAT-Seq and Re-PAT.", 
+                 "PAT-Seq is a transcriptome wide sequencing method that measures gene expression, alternative polyadenylation and poly(A) tail length.", 
+                 "http://rnajournal.cshlp.org/content/21/8/1502.long","","RePAT is a targeted version of this method based on specific primers.", 
+                 "The genome coverage panel is where you select the dataset you would like to look at and the samples you would like to see from this dataset.",
+                 "To group samples you may select the 'Combine samples' check box, which will allow you place samples into whichever groups you would like.",
+                 "If the experiment was a PAT-Seq, you may search by 'peak' which refers to a clustering of reads.",
+                 "Both PAT-Seq and Re-PAT experiments may be searched by gene.",
+                 ""
+                 ,sep = "\n"))
+  })
+  
   
   output$downloadPlot <- downloadHandler(
     filename = function(){
-      paste(trim(select_gene_peak()), '.eps', sep='')
+      paste(trim(select_gene_peak()), 'poly_A_cumulative_distribution.eps', sep='')
     },
     content = function(file){
       setEPS(width = 10)
@@ -278,4 +305,22 @@ shinyServer(function(input, output, session) {
       plot_calcs2()     
       dev.off()       
     })  
+  output$downloadPlot_2 <- downloadHandler(
+    filename = function(){
+      paste(trim(select_gene_peak()), 'read_distributions.eps', sep='')
+    },
+    content = function(file){
+      setEPS(width = 10)
+      postscript(file)
+      pilup_plot_calcs_2()     
+      dev.off()       
+    }) 
+
+  output$downloadPlot_igv <- downloadHandler(
+    paste(trim(select_gene_peak()), 'igv_plot.eps', sep=''),
+     content <- function(file){
+       file.copy('igv_plot.eps', file)
+     }
+    
+  )  
 })
