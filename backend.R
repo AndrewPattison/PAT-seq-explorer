@@ -30,8 +30,10 @@ selected_data<- function (data){
 filter_gff_for_rows<- function (gff,names){
   split_names <- strsplit(names, split = " ")
   empty <- data.frame()
-  
-  for (name in split_names[[1]]){
+  gff <<- gff
+  nims <<- names
+  for (name in split_names){
+
     index1 <- with(gff, grepl 
                    (ignore.case = T,paste('[=/]{1}',name,'[;/,]',sep=""), gff[,'Information']))
     # Would be nice to find some better regex to get rid of this if statement. 
@@ -53,12 +55,14 @@ filter_gff_for_rows<- function (gff,names){
 # This function gets the poly (A) counts for all given gff rows
 get_a_counts <- function(bam_file_path,gff_rows, bam_files, groups, names_from_json){
   reads_report <- data.frame() 
+
   for (gff_row in 1:nrow(gff_rows)){
     counts_frame <- get_a_counts_gff_row(bam_file_path, gff_rows[gff_row,], 
                                          bam_files, groups, names_from_json)
     if (nrow(counts_frame) == 0){
       next
     }
+
     counts_frame$gene_or_peak_name <- gff_rows[gff_row, 'input_gene_or_peak']
     
     reads_report <-rbind(reads_report,counts_frame)   
@@ -266,12 +270,13 @@ make_means_and_meds_frame <- function (poly_a_counts){
 poly_a_plot <- function (processed_frame, ranges,names, leg = F,group = F){
   new_frame <- processed_frame
   new_frame$sample <- factor(new_frame$sample, levels=unique(new_frame$sample))
+  new_frame$gene_or_peak_name <- factor(new_frame$gene_or_peak_name, levels=unique(new_frame$gene_or_peak_name))
 
   if (group == T){
     samples <- split(new_frame, new_frame$group, drop =T)
   }
   else {
-    samples <- split(new_frame, new_frame$sample, drop =T)    
+    samples <- split(new_frame, list(new_frame$sample, new_frame$gene_or_peak_name), drop =T)    
   }  
 
   dummy_ecdf <- ecdf(1:10)
@@ -375,9 +380,11 @@ igv_plot <- function (processed_frame, ranges,names, leg,group = F,
     new_frame$poly_a_extension <- new_frame$pos + new_frame$number_of_as
     
   }
+
+  
   rt <- ggplot(data = new_frame, aes(x= pos, y = count))+
     # scale_x_discrete(labels= sequence[[1]])+
-    facet_wrap(as.formula(paste("~", group_status)),ncol = 2)+
+    facet_wrap(as.formula(paste( "~", group_status, "+" ,"gene_or_peak_name")),scales = "free_x")+
     geom_segment(aes(x= pos,xend=bam_read_ends,  y= count ,
                      yend= count, colour = "Alligned reads"))+
     
@@ -408,6 +415,7 @@ igv_plot <- function (processed_frame, ranges,names, leg,group = F,
       ycount <- -1*max(count)/12
       rt <- rt + annotate("text", x = loc, y = ycount, label = names_list)
     }
+
     
   }
   
