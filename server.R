@@ -15,7 +15,7 @@ shinyServer(function(input, output, session) {
   output$select_file_path <- renderUI({
     selectizeInput("file_path", label = ("Select a dataset"), 
                    choices = list.dirs(full.names=F, recursive =F), 
-                   selected =  list.dirs(full.names=F, recursive =F)[1])   
+                   selected =  list.dirs(full.names=F, recursive =F)[3])   
   })
   
   
@@ -211,7 +211,7 @@ shinyServer(function(input, output, session) {
   })
   pilup_plot_calcs <- reactive({
     pileup_plot(poly_a_counts(), input$xslider_2,select_gene_peak(), input$legend_2,
-                group = F, input$order_alt, alt_cumu_dis = T,show_poly_a =F, F)
+                input$merge, input$order_alt, alt_cumu_dis = T,show_poly_a =F, F)
   })
   pilup_plot_calcs_2 <-function(){
     pileup_plot(poly_a_counts(), input$xslider_2,select_gene_peak(), input$legend_2,
@@ -227,7 +227,7 @@ shinyServer(function(input, output, session) {
     
     igv_plot (poly_a_counts(), input$xslider,select_gene_peak(),input$legend,group = input$merge, 
               input$order_alt, alt_cumu_dis =F,show_poly_a =input$spa, poly_a_pileup=T,gffInput ())
-    dev.copy2eps(file = 'igv_plot.eps')
+   
   })
   
   output$igv_plot<- renderPlot({ 
@@ -236,6 +236,7 @@ shinyServer(function(input, output, session) {
       #coverage_plot_calcs()
     }
     isolate(coverage_plot_calcs())
+    isolate(coverage_plot_calcs_2())
   })
 
   
@@ -319,7 +320,7 @@ shinyServer(function(input, output, session) {
   output$downloadPlot_igv <- downloadHandler(
     paste(trim(select_gene_peak()), 'igv_plot.eps', sep=''),
      content <- function(file){
-       file.copy('igv_plot.eps', file)
+      ggsave(file)
      }
     
   )  

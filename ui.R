@@ -52,8 +52,8 @@ shinyUI(navbarPage("PAT-seq explorer",
                                          sliderInput("ad_slider", label= "Number of sequenced adpater bases", min=0, max=23,
                                                      value =0, step = 1,ticks = TRUE, 
                                                      sep = ",")),
-                                
-                                         downloadButton("downloadPlot_igv", label = "Download EPS")
+                                  column(1,
+                                         downloadButton("downloadPlot_igv", label = "Download EPS"))
                                          
                                   
                                   
