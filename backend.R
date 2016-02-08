@@ -272,8 +272,8 @@ make_means_and_meds_frame <- function (poly_a_counts){
 poly_a_plot <- function (processed_frame, ranges,names, leg = F,group){
   new_frame <- processed_frame
   
-  new_frame$sample <- factor(new_frame$sample, levels=unique(new_frame$sample))
-  new_frame$gene_or_peak_name <- factor(new_frame$gene_or_peak_name, levels=unique(new_frame$gene_or_peak_name))
+    new_frame$sample <- factor(new_frame$sample, levels=unique(new_frame$sample))
+    new_frame$gene_or_peak_name <- factor(new_frame$gene_or_peak_name, levels=unique(new_frame$gene_or_peak_name))
   
   if (group == T){
     samples <- split(new_frame, new_frame$group, drop =T)
@@ -358,7 +358,7 @@ igv_plot <- function (processed_frame, ranges,names, leg,group = F,
   if (gffin[1, "Orientation"] =="-"){
     new_frame <- new_frame[
       with(new_frame,order(
-        group, sample, -pos+width, -number_of_as)
+        group, sample, -pos, -number_of_as)
       ),
       ]   
   }
@@ -421,21 +421,16 @@ igv_plot <- function (processed_frame, ranges,names, leg,group = F,
     else{
       rt = rt+ geom_segment(aes(x=bam_read_ends, xend=poly_a_extension,  y= count ,
                                 yend= count, colour = "Poly (A) tail"))        
-    }
-    rm <- regmatches(gffin[,9], regexpr("id=[^;\\s]+",gffin[,9],perl=T))
-    names_list <- gsub(x=rm,pattern="(id=)",
-                       replacement="",perl=T)
-    rt <- rt + geom_segment(data=gffin, aes_string(x="Peak_Start", xend="Peak_End", y=-2 , yend=-2), colour="RED")
-    loc <- (gffin$Peak_Start + gffin$Peak_End)/2
-    if(length(names_list) > 0){
-      ycount <- -1*max(count)/12
-      rt <- rt + annotate("text", x = loc, y = ycount, label = names_list)
-    }
-    
+    } 
     
   }
-  
-  
+  rt <- rt + geom_segment(data=gffin, aes_string(x="Peak_Start", xend="Peak_End", y=-2 , yend=-2), colour="RED")
+  rm <- regmatches(gffin[,9], regexpr("id=[^;\\s]+",gffin[,9],perl=T))
+  names_list <- gsub(x=rm,pattern="(id=)",
+                     replacement="",perl=T)
+  ycount <- -1*max(count)/12
+  loc <- (gffin$Peak_Start + gffin$Peak_End)/2
+  rt <- rt + annotate("text", x = loc, y = ycount, label = names_list)
   return(rt)
   
 }
@@ -457,7 +452,7 @@ pileup_plot <- function (processed_frame, ranges,names, leg,group = F,
     samples <- split(new_frame, new_frame$sample, drop =T)    
   }  
   par(bty="l", ps = 10, mar=c(5.1,4.1,4.1,8.1), xpd =T)  
-  
+
   ymax <- 0
   for (sample in samples){
     title <- sample[1, 'gene_or_peak_name']
@@ -478,9 +473,9 @@ pileup_plot <- function (processed_frame, ranges,names, leg,group = F,
     
     
     for (df in samples){
-      
+
       split_peak <- split(df,df$gene_or_peak_name, drop =T)    
-      
+         
       for(gene_or_peak in split_peak){  
         colours <- rainbow(length(samples)*length(split_peak))
         
