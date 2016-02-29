@@ -1,5 +1,5 @@
 # Returns a list of bam files from the nominated directory
-setwd("/data/home/apattison/ShinyApps/andrew/")
+
 find_bam_files <- function(file_path) {
   if(file.exists(paste0(file_path,'/','plotter-config.json'))){
     json <- fromJSON(paste0(file_path,'/', "plotter-config.json"))
@@ -99,11 +99,8 @@ get_a_counts_gff_row <- function(bam_file_path,peak, bam_files, groups,names_fro
     #If not, I make a fake one of 0s.
     
     if (length(result [[1]][[5]]) == 0){
-      next
-      result [[1]][[5]] <- rep(0, length(result [[1]][[2]]))  
-    }
-    
-    
+      next 
+    }    
     if (length(result [[1]][[6]][[1]])!= length(result [[1]][[5]])){
       result [[1]][[6]][[1]] <- rep(0, length(result [[1]][[5]]))    
     }
@@ -397,7 +394,7 @@ igv_plot <- function (processed_frame, ranges,names, leg,group = F,
     
   }
   
-  
+
   rt <- ggplot(data = new_frame, aes(x= pos, y = count))+
     # scale_x_discrete(labels= sequence[[1]])+
     facet_wrap(as.formula(paste( "~", group_status, "+" ,"gene_or_peak_name")),scales = "free_x")+
@@ -424,13 +421,18 @@ igv_plot <- function (processed_frame, ranges,names, leg,group = F,
     } 
     
   }
+  loc <- (gffin$Peak_Start + gffin$Peak_End)/2
   rt <- rt + geom_segment(data=gffin, aes_string(x="Peak_Start", xend="Peak_End", y=-2 , yend=-2), colour="RED")
   rm <- regmatches(gffin[,9], regexpr("id=[^;\\s]+",gffin[,9],perl=T))
   names_list <- gsub(x=rm,pattern="(id=)",
                      replacement="",perl=T)
-  ycount <- -1*max(count)/12
+  ycount <- -5
   loc <- (gffin$Peak_Start + gffin$Peak_End)/2
-  rt <- rt + annotate("text", x = loc, y = ycount, label = names_list)
+  # fix here later
+
+  rt <- rt + annotate("text", x = loc, y = ycount, label ="")    
+
+ 
   return(rt)
   
 }
@@ -502,12 +504,12 @@ pileup_plot <- function (processed_frame, ranges,names, leg,group = F,
   }
 }
 
-gene_expression_plot <- function(processed_bame_frame, gff_path){
+gene_expression_plot <- function(processed_bame_frame, gff_path, merge){
   #This is where I was thinking of trying to find the correct
   #counts csv file. Can't think of a standard way to do this though. 
   #print(gff_path)
-  
-  if (processed_bame_frame[1,"group"] == "group NULL"){
+  test <<- processed_bame_frame
+  if (merge == F){
     samples <- split(processed_bame_frame,processed_bame_frame$sample, drop =T)
     xlab <- "Sample"
   }

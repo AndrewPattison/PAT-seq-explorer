@@ -200,7 +200,7 @@ shinyServer(function(input, output, session) {
   })
   gene_expression_plot_calcs <-
     reactive({
-      gene_expression_plot(poly_a_counts(),found_gff_files())
+      gene_expression_plot(poly_a_counts(),found_gff_files(), input$merge)
     })
   output$gene_expression_plot <-renderPlot({
     gene_expression_plot_calcs()
@@ -215,7 +215,7 @@ shinyServer(function(input, output, session) {
   })
   pilup_plot_calcs_2 <-function(){
     pileup_plot(poly_a_counts(), input$xslider_2,select_gene_peak(), input$legend_2,
-                group = F, input$order_alt, alt_cumu_dis = T,show_poly_a =F, F)
+                input$merge , input$order_alt, alt_cumu_dis = T,show_poly_a =F, F)
   }
   coverage_plot_calcs <- reactive({
     
